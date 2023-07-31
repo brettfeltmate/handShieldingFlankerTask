@@ -68,5 +68,6 @@ datafile_ext = ".txt"
 #########################################
 reps_per_condition = int(blocks_per_experiment / 2)
 fixation_min = 300
-fixation_max = 1000
-fixation_mean = 800
+fixation_max = 1500
+fixation_mean = 500
+inter_trial_interval = 1000

@@ -11,13 +11,13 @@ from klibs.KLGraphics import KLDraw as kld
 from klibs.KLGraphics import fill, blit, flip
 from klibs.KLUserInterface import any_key, ui_request
 from klibs.KLCommunication import message
-from klibs.KLUtilities import deg_to_px, hide_mouse_cursor
+from klibs.KLUtilities import deg_to_px, hide_mouse_cursor, now
 from klibs.KLResponseCollectors import KeyPressResponse
 
 from random import shuffle, expovariate
 
 # RGB constants for easy reference
-GRAY = [90, 90, 96, 255]
+GRAY = [90, 90, 96, 127]
 WHITE = [255, 255, 255, 255]
 
 
@@ -31,7 +31,7 @@ class handShieldingFlankerTask(klibs.Experiment):
 
 		# Stimulus location registration points
 		# Defined in "units" relative to screen centre
-		offset = deg_to_px(4) 
+		offset = deg_to_px(8) 
 		self.locs = {
 			"center":         P.screen_c,
 			"message": 	     [P.screen_c[0],     P.screen_c[1] - offset], # [X, Y]
@@ -50,8 +50,8 @@ class handShieldingFlankerTask(klibs.Experiment):
 		hand_guide_length = stim_length * 3.0
 		# Arrows' composite parts
 		arrow_tail_length = stim_length * 0.75
-		arrow_head_length = stim_length * 0.25
-		arrow_head_width  = stim_girth  * 3.0
+		arrow_head_length = stim_length * 0.50
+		arrow_head_width  = stim_girth  * 5.0
 		arrow_dimensions = [
 			arrow_tail_length, stim_girth,		# length, width of tail
 			arrow_head_length, arrow_head_width # length, width of head
@@ -59,7 +59,7 @@ class handShieldingFlankerTask(klibs.Experiment):
 
 		# Stimulus objects
 		self.fixation = kld.FixationCross(size=fixation_length, thickness=stim_girth, fill=WHITE)
-		self.guide = kld.Line(length=hand_guide_length, thickness=stim_girth, color=GRAY)
+		self.guide = kld.Line(length=hand_guide_length, thickness=stim_girth / 2, color=GRAY)
 		self.arrows = {
 			'up':   kld.Arrow(*arrow_dimensions, rotation=270, fill=WHITE), # 0º = right-ward
 			'down': kld.Arrow(*arrow_dimensions, rotation=90,  fill=WHITE)
@@ -106,32 +106,48 @@ class handShieldingFlankerTask(klibs.Experiment):
 		# Response mappings
 		self.rc.keypress_listener.key_map = {'Up': 'up', 'Down': 'down'}
 		# Response window
-		self.rc.terminate_after = [1000, TK_MS]
+		self.rc.terminate_after = [2000, TK_MS]
 		# Abort trial upon response
 		self.rc.keypress_listener.interrupts = True
 
 
-
 	def trial_prep(self):
+		# Establish & register time until target array onset
 		self.fix_targ_soa = self.get_fix_target_asyncrony()
 		self.evm.register_ticket(["array_on", self.fix_targ_soa])
+
+		# Present base display
 		self.present_stimuli()
 		hide_mouse_cursor()
 
 	def trial(self):
-
+		# Do nothing until array onset
 		while self.evm.before("array_on"):
 			ui_request()
 
+		# Present array and listen for response
 		self.present_stimuli(target_phase=True)
-		
 		self.rc.collect()
 
+		# Grab response (if made)
 		response = self.rc.keypress_listener.response()
-		error_made = "NA"
-
+		error_made = "NO_RESPONSE"
+		
+		# Determine if error was made
 		if response[0] != "NO_RESPONSE":
 			error_made = int(response[0] != self.target_type)
+
+		# Admonish participant if so
+		if error_made != 0:
+			self.error_tone.play()
+
+		# clear display and pause until next trial
+		self.present_stimuli(guide_only = True)
+
+		ITI = now() + (P.inter_trial_interval / 1000.0)
+
+		while now() < ITI:
+			ui_request()
 
 		return {
 			"block_num": P.block_number,
@@ -147,23 +163,24 @@ class handShieldingFlankerTask(klibs.Experiment):
 		}
 
 	def trial_clean_up(self):
-		pass
+		self.rc.keypress_listener.reset()
+
 
 	def clean_up(self):
 		pass
 
 
-	def present_stimuli(self, target_phase = False):
+	def present_stimuli(self, target_phase = False, guide_only = False):
 		fill() # Paint background
 
 		blit(self.guide, 5, self.locs[self.hand_guide_loc]) # Add hand guide
-		
-		if target_phase: # add target & flankers, when appropriate
-			blit(self.arrows[self.left_flanker],  5, self.locs["left_flanker"])
-			blit(self.arrows[self.target_type],   5, self.locs["center"])
-			blit(self.arrows[self.right_flanker], 5, self.locs["right_flanker"])
-		else: # otherwise, only add fixation cross
-			blit(self.fixation, 5, self.locs["center"])
+		if not guide_only:
+			if target_phase: # add target & flankers, when appropriate
+				blit(self.arrows[self.left_flanker],  5, self.locs["left_flanker"])
+				blit(self.arrows[self.target_type],   5, self.locs["center"])
+				blit(self.arrows[self.right_flanker], 5, self.locs["right_flanker"])
+			else: # otherwise, only add fixation cross
+				blit(self.fixation, 5, self.locs["center"])
 
 		flip() # make visible
 
