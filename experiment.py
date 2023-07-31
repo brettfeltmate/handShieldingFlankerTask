@@ -33,12 +33,12 @@ class handShieldingFlankerTask(klibs.Experiment):
 		# Defined in "units" relative to screen centre
 		offset = deg_to_px(4) 
 		self.locs = {
-			"center":        P.screen_c,
-			"message": 		[P.screen_c[0],     P.screen_c[1] - offset], # [X, Y]
-			"left_flank":   [P.screen_c[0] - offset,     P.screen_c[1]], 
-			"right_flank":  [P.screen_c[0] + offset,     P.screen_c[1]],
-			"left_guide":   [P.screen_c[0] - offset / 2, P.screen_c[1]], # mid of target & flanker
-			"right_guide":  [P.screen_c[0] + offset / 2, P.screen_c[1]],
+			"center":         P.screen_c,
+			"message": 	     [P.screen_c[0],     P.screen_c[1] - offset], # [X, Y]
+			"left_flanker":  [P.screen_c[0] - offset,     P.screen_c[1]], 
+			"right_flanker": [P.screen_c[0] + offset,     P.screen_c[1]],
+			"left_guide":    [P.screen_c[0] - offset / 2, P.screen_c[1]], # mid of target & flanker
+			"right_guide":   [P.screen_c[0] + offset / 2, P.screen_c[1]],
 		}
 
 		# Stimulus sizings
@@ -98,7 +98,6 @@ class handShieldingFlankerTask(klibs.Experiment):
 
 		any_key()
 
-		quit()
 
 	def setup_response_collector(self):
 		# Will potentially be replaced depending on whether button pad
@@ -178,7 +177,7 @@ class handShieldingFlankerTask(klibs.Experiment):
 		while interval > P.fixation_max:
 			# sample value from exponential distribution, ensuring never below min val
 			# don't ask why this works, but run it a few times and you'll see it does
-			interval = expovariate(1.0 / float(P.fixation_mean - P.fixation_min) + P.fixation_min)
+			interval = expovariate(1.0 / float(P.fixation_mean - P.fixation_min)) + P.fixation_min
 
 		return interval
 
