@@ -17,7 +17,7 @@ from klibs.KLResponseCollectors import KeyPressResponse
 from random import shuffle, expovariate
 
 # RGB constants for easy reference
-GRAY = [90, 90, 96, 127]
+GRAY = [90, 90, 96, 85]
 WHITE = [255, 255, 255, 255]
 
 
