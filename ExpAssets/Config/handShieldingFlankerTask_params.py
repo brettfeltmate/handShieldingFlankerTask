@@ -22,8 +22,8 @@ eye_tracking = False
 #########################################
 default_fill_color = (45, 45, 48, 255)
 default_color = (255, 255, 255, 255)
-default_font_size = 1
-default_font_unit = 'deg'
+default_font_size = 23
+default_font_unit = 'px'
 default_font_name = 'Hind-Medium'
 
 #########################################
@@ -66,3 +66,4 @@ datafile_ext = ".txt"
 #########################################
 # PROJECT-SPECIFIC VARS
 #########################################
+reps_per_condition = int(blocks_per_experiment / 2)

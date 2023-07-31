@@ -5,12 +5,16 @@ __author__ = "Brett Feltmate"
 import klibs
 from klibs import P
 
+from klibs.KLConstants import TK_MS
 from klibs.KLAudio import Tone
 from klibs.KLGraphics import KLDraw as kld
 from klibs.KLGraphics import fill, blit, flip
 from klibs.KLUserInterface import any_key
 from klibs.KLCommunication import message
 from klibs.KLUtilities import deg_to_px, hide_mouse_cursor
+from klibs.KLResponseCollectors import KeyPressResponse
+
+from random import shuffle
 
 # RGB constants for easy reference
 GRAY = [90, 90, 96, 255]
@@ -27,12 +31,13 @@ class handShieldingFlankerTask(klibs.Experiment):
 		# Stimulus location registration points
 		# Defined in "units" relative to screen centre
 		offset = deg_to_px(4) 
-		self.stim_locs = {
-			"center": P.screen_c,
-			"left_flank":  [P.screen_c[0] - offset,     P.screen_c[1]], # [X, Y]
-			"right_flank": [P.screen_c[0] + offset,     P.screen_c[1]],
-			"left_guide":  [P.screen_c[0] - offset / 2, P.screen_c[1]], # mid of target & flanker
-			"right_guide": [P.screen_c[0] + offset / 2, P.screen_c[1]],
+		self.locs = {
+			"center":        P.screen_c,
+			"message": 		[P.screen_c[0],     P.screen_c[1] - offset], # [X, Y]
+			"left_flank":   [P.screen_c[0] - offset,     P.screen_c[1]], 
+			"right_flank":  [P.screen_c[0] + offset,     P.screen_c[1]],
+			"left_guide":   [P.screen_c[0] - offset / 2, P.screen_c[1]], # mid of target & flanker
+			"right_guide":  [P.screen_c[0] + offset / 2, P.screen_c[1]],
 		}
 
 		# Stimulus sizings
@@ -59,17 +64,51 @@ class handShieldingFlankerTask(klibs.Experiment):
 		self.arrow_up.render()
 		self.arrow_down.render()
 
+		# Error signal
 		self.error_tone = Tone(duration=100, wave_type="sine", frequency=2000)
+
+		# Block sequence
+		base = ['left_guide', 'right_guide']
+		shuffle(base)
+
+		self.block_sequence = base * P.reps_per_condition
 
 		if P.run_practice_blocks:
 			pass
 
 
 	def block(self):
-		pass
+		self.block
+		hand_placed = "left"
+
+		hand = "left"
+
+		msg = "Better instructions to come. + \
+			\nIn each trial of this task, three arrows will be presented in a line. \
+			\nPlease indicated whether the MIDDLE arrow points up (up key), or down (down key). \
+			\nDuring the block, you will place and hold your hand on the gray line, palm-in. \
+			\n\nPress any key to start."
+		
+		fill()
+		message(text=msg, location=self.locs["message"], registration=8)
+		flip()
+
+		any_key()
+
+		quit()
 
 	def setup_response_collector(self):
-		pass
+		# Will potentially be replaced depending on whether button pad
+		# is amicable or not
+		self.rc.uses(KeyPressResponse)
+		# Response mappings
+		self.rc.keypress_listener.key_map = {'Up': 'up', 'Down': 'down'}
+		# Response window
+		self.rc.terminate_after = [1000, TK_MS]
+		# Abort trial upon response
+		self.rc.keypress_listener.interrupts = True
+
+
 
 	def trial_prep(self):
 		pass
@@ -86,3 +125,5 @@ class handShieldingFlankerTask(klibs.Experiment):
 
 	def clean_up(self):
 		pass
+
+
