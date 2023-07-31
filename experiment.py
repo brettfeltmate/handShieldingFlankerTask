@@ -9,12 +9,12 @@ from klibs.KLConstants import TK_MS
 from klibs.KLAudio import Tone
 from klibs.KLGraphics import KLDraw as kld
 from klibs.KLGraphics import fill, blit, flip
-from klibs.KLUserInterface import any_key
+from klibs.KLUserInterface import any_key, ui_request
 from klibs.KLCommunication import message
 from klibs.KLUtilities import deg_to_px, hide_mouse_cursor
 from klibs.KLResponseCollectors import KeyPressResponse
 
-from random import shuffle
+from random import shuffle, expovariate
 
 # RGB constants for easy reference
 GRAY = [90, 90, 96, 255]
@@ -81,13 +81,14 @@ class handShieldingFlankerTask(klibs.Experiment):
 	def block(self):
 		self.hand_guide_loc = self.block_sequence.pop()
 		
-		hand_placed = "left" if self.hand_guide_loc == "left_guide" else "right"
+		self.hand_placed = "left" if self.hand_guide_loc == "left_guide" else "right"
 
-		msg = "Better instructions to come. \
-			\nIn each trial of this task, three arrows will be presented in a line. \
-			\nPlease indicated whether the MIDDLE arrow points up (up key), or down (down key). \
-			\nDuring the block, you will place and hold your {} hand on the gray line, palm-in. \
-			\n\nPress any key to start.".format(hand_placed)
+		msg = "Better instructions to come." + \
+			"\nIn each trial of this task, three arrows will be presented in a line." + \
+			"\nPlease indicated whether the MIDDLE arrow points up (up key), or down (down key)."+ \
+			"\nDuring the block, you will place and hold your {} hand on the gray line, palm-in."+ \
+			"\n\nPress any key to start."
+		msg = msg.format(self.hand_placed.upper())
 		
 		fill()
 		message(text=msg, location=self.locs["message"], registration=8)
@@ -113,13 +114,37 @@ class handShieldingFlankerTask(klibs.Experiment):
 
 
 	def trial_prep(self):
-		pass
+		self.fix_targ_soa = self.get_fix_target_asyncrony()
+		self.evm.register_ticket(["array_on", self.fix_targ_soa])
+		self.present_stimuli()
+		hide_mouse_cursor()
 
 	def trial(self):
 
+		while self.evm.before("array_on"):
+			ui_request()
+
+		self.present_stimuli(target_phase=True)
+		
+		self.rc.collect()
+
+		response = self.rc.keypress_listener.response()
+		error_made = "NA"
+
+		if response[0] != "NO_RESPONSE":
+			error_made = int(response[0] != self.target_type)
+
 		return {
 			"block_num": P.block_number,
-			"trial_num": P.trial_number
+			"trial_num": P.trial_number,
+			"hand_placed": self.hand_placed,
+			"fix_target_asynchrony": self.fix_targ_soa,
+			"target_type": self.target_type,
+			"left_flanker_type": self.left_flanker,
+			"right_flanker_type": self.right_flanker,
+			"response_time": response[1],
+			"response_made": response[0],
+			"response_error": error_made
 		}
 
 	def trial_clean_up(self):
@@ -142,3 +167,18 @@ class handShieldingFlankerTask(klibs.Experiment):
 			blit(self.fixation, 5, self.locs["center"])
 
 		flip() # make visible
+
+	# Get fix-target asynchrony, sampled from non-decaying time function
+	def get_fix_target_asyncrony(self):
+
+		# dummy val to start loop
+		interval = P.fixation_max + 1
+
+		# until val below max is generated
+		while interval > P.fixation_max:
+			# sample value from exponential distribution, ensuring never below min val
+			# don't ask why this works, but run it a few times and you'll see it does
+			interval = expovariate(1.0 / float(P.fixation_mean - P.fixation_min) + P.fixation_min)
+
+		return interval
+

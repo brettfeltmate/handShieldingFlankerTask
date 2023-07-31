@@ -67,3 +67,6 @@ datafile_ext = ".txt"
 # PROJECT-SPECIFIC VARS
 #########################################
 reps_per_condition = int(blocks_per_experiment / 2)
+fixation_min = 300
+fixation_max = 1000
+fixation_mean = 800
