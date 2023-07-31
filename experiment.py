@@ -18,6 +18,7 @@ from random import shuffle
 
 # RGB constants for easy reference
 GRAY = [90, 90, 96, 255]
+WHITE = [255, 255, 255, 255]
 
 
 
@@ -57,12 +58,12 @@ class handShieldingFlankerTask(klibs.Experiment):
 		]
 
 		# Stimulus objects
-		self.fixation = kld.FixationCross(size=fixation_length, thickness=stim_girth)
-		self.hand_guide = kld.Line(length=hand_guide_length, thickness=stim_girth, color=GRAY)
-		self.arrow_up = kld.Arrow(*arrow_dimensions, rotation=270)
-		self.arrow_down = kld.Arrow(*arrow_dimensions, rotation=90)
-		self.arrow_up.render()
-		self.arrow_down.render()
+		self.fixation = kld.FixationCross(size=fixation_length, thickness=stim_girth, fill=WHITE)
+		self.guide = kld.Line(length=hand_guide_length, thickness=stim_girth, color=GRAY)
+		self.arrows = {
+			'up':   kld.Arrow(*arrow_dimensions, rotation=270, fill=WHITE), # 0º = right-ward
+			'down': kld.Arrow(*arrow_dimensions, rotation=90,  fill=WHITE)
+		}
 
 		# Error signal
 		self.error_tone = Tone(duration=100, wave_type="sine", frequency=2000)
@@ -78,19 +79,20 @@ class handShieldingFlankerTask(klibs.Experiment):
 
 
 	def block(self):
-		self.block
-		hand_placed = "left"
+		self.hand_guide_loc = self.block_sequence.pop()
+		
+		hand_placed = "left" if self.hand_guide_loc == "left_guide" else "right"
 
-		hand = "left"
-
-		msg = "Better instructions to come. + \
+		msg = "Better instructions to come. \
 			\nIn each trial of this task, three arrows will be presented in a line. \
 			\nPlease indicated whether the MIDDLE arrow points up (up key), or down (down key). \
-			\nDuring the block, you will place and hold your hand on the gray line, palm-in. \
-			\n\nPress any key to start."
+			\nDuring the block, you will place and hold your {} hand on the gray line, palm-in. \
+			\n\nPress any key to start.".format(hand_placed)
 		
 		fill()
 		message(text=msg, location=self.locs["message"], registration=8)
+		blit(self.fixation, 5, self.locs["center"])
+		blit(self.guide, 5, self.locs[self.hand_guide_loc])
 		flip()
 
 		any_key()
@@ -127,3 +129,16 @@ class handShieldingFlankerTask(klibs.Experiment):
 		pass
 
 
+	def present_stimuli(self, target_phase = False):
+		fill() # Paint background
+
+		blit(self.guide, 5, self.locs[self.hand_guide_loc]) # Add hand guide
+		
+		if target_phase: # add target & flankers, when appropriate
+			blit(self.arrows[self.left_flanker],  5, self.locs["left_flanker"])
+			blit(self.arrows[self.target_type],   5, self.locs["center"])
+			blit(self.arrows[self.right_flanker], 5, self.locs["right_flanker"])
+		else: # otherwise, only add fixation cross
+			blit(self.fixation, 5, self.locs["center"])
+
+		flip() # make visible
