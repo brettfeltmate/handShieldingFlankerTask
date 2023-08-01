@@ -104,7 +104,9 @@ class handShieldingFlankerTask(klibs.Experiment):
 		# is amicable or not
 		self.rc.uses(KeyPressResponse)
 		# Response mappings
-		self.rc.keypress_listener.key_map = {'Up': 'up', 'Down': 'down'}
+		# This experiment used a Millikey SV-2 r1, wherein the up & down buttons
+		# are mapped to '1' and '2', respectively.
+		self.rc.keypress_listener.key_map = {'1': 'up', '2': 'down'}
 		# Response window
 		self.rc.terminate_after = [2000, TK_MS]
 		# Abort trial upon response
