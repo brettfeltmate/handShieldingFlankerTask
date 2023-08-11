@@ -25,10 +25,8 @@ WHITE = [255, 255, 255, 255]
 class handShieldingFlankerTask(klibs.Experiment):
 
 	def setup(self):
-		#
 		# Stimulus Properties
 		#
-
 		# Stimulus location registration points
 		# Defined in "units" relative to screen centre
 		offset = deg_to_px(8) 
@@ -62,7 +60,7 @@ class handShieldingFlankerTask(klibs.Experiment):
 		self.fixation = FixationCross(size=fix_len, thickness=base_thick, fill=WHITE)
 		self.guide = Line(length=hand_guide_len, thickness=hand_guide_thick, color=GRAY)
 		self.arrows = {
-			'up':   Arrow(*arrow_dims, rotation=270, fill=WHITE), # 0º = right-ward
+			'up':   Arrow(*arrow_dims, rotation=270, fill=WHITE), # 0º = right-facing
 			'down': Arrow(*arrow_dims, rotation=90,  fill=WHITE)
 		}
 
@@ -70,43 +68,53 @@ class handShieldingFlankerTask(klibs.Experiment):
 		self.error_tone = Tone(duration=100, wave_type="sine", frequency=2000)
 
 		# Block sequence
-		base = ['left_guide', 'right_guide']
-		shuffle(base) # randomize which hand starts
-
-		self.block_sequence = base * P.reps_per_condition 
+		hand_guide = ['none', 'left_guide', 'right_guide']
+		self.block_sequence = hand_guide * P.reps_per_condition # extend to desired number of blocks
 
 		if P.run_practice_blocks:
-			pass
+			self.block_sequence.append(hand_guide) # add additional round of blocks
+			self.insert_practice_block(block_nums=[1,2,3], trial_counts=P.trials_per_practice_block)
 
 
 	def block(self):
-		self.hand_guide_loc = self.block_sequence.pop()
+		# After practice phase completes, begin randomizing block conditions
+		# Or, in other words, ensure practice phase contains one block for each cond.
+		if not P.practicing:
+			shuffle(self.block_sequence)
 
+		self.guide_for_block = self.block_sequence.pop() # Get guide location for current block
+		self.hand_used = self.guide_for_block.split('_')[0] # Pop out laterality for tidy messaging
+
+		# Rough draft of instructions
 		msg = "Better instructions to come." + \
 			"\nIn each trial of this task, three arrows will be presented in a line." + \
-			"\nPlease indicated whether the middle arrow points up (up key), or down (down key)."+ \
-			"\nDuring the block, you will place and hold your {} hand on the gray line, palm-in."+ \
-			"\n\nPress any key to start."
-		msg = msg.format("left" if self.hand_guide_loc == "left_guide" else "right")
+			"\nUsing the provided keypad, indicate whether the central arrows points upward (red button), or downward (black button)." + \
+			"\nPlease try to be both fast, and accurate, when responding."
 		
-		fill()
-		message(text=msg, location=self.locs["message"], registration=8)
-		blit(self.fixation, 5, self.locs["center"])
-		blit(self.guide, 5, self.locs[self.hand_guide_loc])
-		flip()
+		# Tack on hand instructions when necessary.
+		if self.hand_used != "None":
+			msg += "\n\nDuring this block, please place and keep your {} hand on the gray line, with your palm facing inwards."
+			msg = msg.format(self.hand_used)
 
+		msg += "\n\nWhen you are ready to to begin, press any key to start the block."
+		if P.practicing:
+			if P.block_number < 3:
+				msg += "\n(this is a practice block)"
+			else:
+				msg += "\n(this is the final practice block)"
+		
+		# Present fixation and wait for block initiation
+		self.draw_display(msg=msg)
 		any_key()
 
 
 	def setup_response_collector(self):
-		# Will potentially be replaced depending on whether button pad
-		# is amicable or not
-		self.rc.uses(KeyPressResponse)
-		# Response mappings
+		self.rc.uses(KeyPressResponse) # This feel self-explanatory
+		
 		# This experiment used a Millikey SV-2 r1, wherein the up & down buttons
-		# are mapped to '1' and '2', respectively.
+		# are mapped to '1' and '2', respectively. 
 		self.rc.keypress_listener.key_map = {'1': 'up', '2': 'down'}
-		# Response window
+		# Self-terminate if no response made by 2s
 		self.rc.terminate_after = [2000, TK_MS]
 		# Abort trial upon response
 		self.rc.keypress_listener.interrupts = True
@@ -118,7 +126,7 @@ class handShieldingFlankerTask(klibs.Experiment):
 		self.evm.register_ticket(["target_onset", self.fix_targ_soa])
 
 		# Present base display
-		self.present_stimuli(phase = 'fixation')
+		self.draw_display(phase = 'fixation')
 
 	def trial(self):
 		# Do nothing until array onset
@@ -126,60 +134,58 @@ class handShieldingFlankerTask(klibs.Experiment):
 			ui_request()
 
 		# Present array and listen for response
-		self.present_stimuli(phase = 'target')
+		self.draw_display(phase = 'target')
 		self.rc.collect()
 
-		# Grab response (if made)
+		# Grab response (or lack thereof)
 		response = self.rc.keypress_listener.response()
-		error_made = "NO_RESPONSE"
-		
-		# Determine if error was made
-		if response.value != "NO_RESPONSE":
-			error_made = int(response.value != self.target_type)
 
-		# Admonish participant if so
-		if error_made != 0:
+		# Admonish participant for incorrect or absent responses
+		if response.value != self.target_type:
 			self.error_tone.play()
 
 		# clear display and pause until next trial
-		self.present_stimuli()
-
-		ITI = now() + (P.inter_trial_interval / 1000.0)
-
-		while now() < ITI:
-			ui_request()
+		self.draw_display()
 
 		return {
 			"block_num": P.block_number,
 			"trial_num": P.trial_number,
-			"hand_placed": "left" if self.hand_guide_loc == "left_guide" else "right",
+			"hand_placed": self.hand_used,
 			"fix_target_asynchrony": self.fix_targ_soa,
 			"target_type": self.target_type,
 			"left_flanker_type": self.left_flanker,
 			"right_flanker_type": self.right_flanker,
 			"response_time": response.rt,
-			"response_made": response.value,
-			"response_error": error_made
+			"response_made": response.value
 		}
 
 	def trial_clean_up(self):
+		# Very likely superfluous 
 		self.rc.keypress_listener.reset()
+		
+		# Enforce 1s delay between trials
+		ITI = now() + (P.inter_trial_interval / 1000.0)
+		while now() < ITI:
+			ui_request()
 
 
 	def clean_up(self):
 		pass
 
-
-	def present_stimuli(self, phase):
+	# Draws the necessary stimuli for the current trial/task phase
+	def draw_display(self, phase, msg = None):
 
 		hide_mouse_cursor()
 		fill() # Paint background
 
-		blit(self.guide, 5, self.locs[self.hand_guide_loc]) # Add hand guide
+		# Draw hand guide when appropriate
+		if self.guide_for_block != 'none':
+			blit(self.guide, 5, self.locs[self.guide_for_block])
 
 		if phase == 'fixation':
 			blit(self.fixation, 5, self.locs["center"])
 
+		# Present the appropriate arrow types (up/down) for each location
 		if phase == 'target':
 			blit(self.arrows[self.left_flanker],  5, self.locs["left_flanker"])
 			blit(self.arrows[self.target_type],   5, self.locs["center"])
@@ -200,4 +206,9 @@ class handShieldingFlankerTask(klibs.Experiment):
 			interval = expovariate(1.0 / float(P.fixation_mean - P.fixation_min)) + P.fixation_min
 
 		return interval
+	
+	def give_instructions(self, hand_used):
+		msg = ""
+		if P.block_number == 1:
+			msg += ""
 
