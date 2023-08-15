@@ -156,7 +156,14 @@ class handShieldingFlankerTask(klibs.Experiment):
 
 
 	def clean_up(self):
-		pass
+		fill()
+		message(
+			"All done! Press any key to quit the experiment.", 
+			location=P.screen_c, registration=5
+		)
+		flip()
+
+		any_key()
 
 	# Draws the necessary stimuli for the current trial/task phase
 	def draw_display(self, show_array=False, msg = None):
