@@ -40,7 +40,7 @@ saccadic_motion_threshold = 0.15
 # Experiment Structure
 #########################################
 multi_session_project = False
-trials_per_block = 90
+trials_per_block = 6
 blocks_per_experiment = 6
 table_defaults = {}
 conditions = []
@@ -68,7 +68,3 @@ datafile_ext = ".txt"
 #########################################
 reps_per_condition = int(blocks_per_experiment / 3)
 trials_per_practice_block = 6
-fixation_min = 500
-fixation_max = 2000
-fixation_mean = 800
-inter_trial_interval = 1000
