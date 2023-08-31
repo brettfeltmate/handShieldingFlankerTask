@@ -223,13 +223,16 @@ class handShieldingFlankerTask(klibs.Experiment):
 			add = add.format(key_hand)
 
 
-		msg += add + "\n\nPress any key to begin the block."
+		msg += add
 
 		if P.practicing:
 			if P.block_number == 1:
 				msg += "\n(this is a practice block)"
 			else:
 				msg += "\n(this is the final practice block)"
+
+		else:
+			msg += "(This is block {0} of {1})".format(P.block_number, P.blocks_per_experiment)
 
 		return msg
 
