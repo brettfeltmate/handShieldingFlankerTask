@@ -17,7 +17,7 @@ from random import shuffle
 import sdl2
 
 # RGB constants for easy reference
-GRAY = [90, 90, 96, 85]
+GRAY = [125, 125, 125, 255]
 WHITE = [255, 255, 255, 255]
 
 
