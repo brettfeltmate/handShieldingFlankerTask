@@ -5,9 +5,7 @@ __author__ = "Brett Feltmate"
 import klibs
 from klibs import P
 
-from klibs.KLConstants import TK_MS
-from klibs.KLAudio import Tone
-from klibs.KLGraphics.KLDraw import FixationCross, Arrow, Line
+from klibs.KLGraphics.KLDraw import Line
 from klibs.KLGraphics import fill, blit, flip
 from klibs.KLUserInterface import any_key, ui_request
 from klibs.KLCommunication import message
@@ -15,7 +13,7 @@ from klibs.KLUtilities import deg_to_px, hide_mouse_cursor
 from klibs.KLResponseCollectors import KeyPressResponse
 from klibs.KLKeyMap import KeyMap
 
-from random import shuffle, expovariate
+from random import shuffle
 import sdl2
 
 # RGB constants for easy reference
@@ -56,7 +54,7 @@ class handShieldingFlankerTask(klibs.Experiment):
 			"center":       P.screen_c,
 			"right_flank": [P.screen_c[0] + offset,   P.screen_c[1]],
 			"right_guide": [P.screen_c[0] + offset/2, P.screen_c[1]],
-			"instrux":     [P.screen_c[0],            P.screen_c[1] - offset/2] # up from center
+			"instrux":     [P.screen_c[0],            P.screen_c[1] - offset] # up from center
 		}
 
 		# Guide line
@@ -140,6 +138,7 @@ class handShieldingFlankerTask(klibs.Experiment):
 		self.draw_display()
 
 		return {
+			"practicing": P.practicing,
 			"block_num": P.block_number,
 			"trial_num": P.trial_number,
 			"hand_placed": self.guide_for_block.split('_')[0],
@@ -219,7 +218,7 @@ class handShieldingFlankerTask(klibs.Experiment):
 			key_hand = self.key_hand_no_guide.pop()
 
 			add = "\nThroughout this block, use the index and middle fingers of your {} hand"
-			add += " to respond.\nNeither hand needs to be placed on the screen for this block."
+			add += " to respond.\n You DO NOT need to place any hand on the screen for this block."
 			add = add.format(key_hand)
 
 
@@ -232,7 +231,7 @@ class handShieldingFlankerTask(klibs.Experiment):
 				msg += "\n(this is the final practice block)"
 
 		else:
-			msg += "(This is block {0} of {1})".format(P.block_number, P.blocks_per_experiment)
+			msg += "\n\n(This is block {0} of {1})".format(P.block_number, P.blocks_per_experiment)
 
 		return msg
 
